@@ -1,0 +1,20 @@
+server:
+  port: 1927
+
+spring:
+  application:
+    name: cryptoexchangeapi
+  config:
+    import: optional:file:.env[.properties]
+  data:
+    mongodb:
+      host: ${MONGO_DB_HOST:localhost}
+      port: ${MONGO_DB_PORT:27017}
+      database: ${MONGO_DB_NAME:cryptoexchangedatabase}
+
+
+# SWAGGER
+springdoc:
+  api-docs:
+    enabled: true
+  show-actuator: true
