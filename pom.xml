@@ -35,6 +35,9 @@
 		<openapi.version>2.1.0</openapi.version>
 		<maven-surefire-plugin-version>3.5.2</maven-surefire-plugin-version>
 		<maven-failsafe-plugin-version>3.5.2</maven-failsafe-plugin-version>
+		<feign-client.version>4.3.0</feign-client.version>
+		<resillience4j.version>2.3.0</resillience4j.version>
+		<mapstruct.version>1.5.5.Final</mapstruct.version>
 	</properties>
 
 	<dependencies>
@@ -85,6 +88,23 @@
 			<artifactId>spring-boot-starter-aop</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-openfeign</artifactId>
+			<version>${feign-client.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.github.resilience4j</groupId>
+			<artifactId>resilience4j-spring-boot3</artifactId>
+			<version>${resillience4j.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct</artifactId>
+			<version>${mapstruct.version}</version>
+		</dependency>
 
 	</dependencies>
 

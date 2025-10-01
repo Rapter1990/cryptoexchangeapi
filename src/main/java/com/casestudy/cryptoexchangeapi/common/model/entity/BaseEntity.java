@@ -25,7 +25,4 @@ public class BaseEntity {
     @Field(name = "createdAt")
     private LocalDateTime createdAt;
 
-    @Field(name = "updatedAt")
-    private LocalDateTime updatedAt;
-
 }

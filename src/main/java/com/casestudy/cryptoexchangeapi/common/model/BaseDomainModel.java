@@ -25,7 +25,4 @@ public abstract class BaseDomainModel {
     @Field(name = "createdAt")
     private LocalDateTime createdAt;
 
-    @Field(name = "updatedAt")
-    private LocalDateTime updatedAt;
-
 }
