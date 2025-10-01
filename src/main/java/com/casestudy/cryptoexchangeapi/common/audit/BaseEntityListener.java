@@ -40,8 +40,8 @@ public class BaseEntityListener extends AbstractMongoEventListener<BaseEntity> {
      */
     private void setEntityIdIfNeeded(BaseEntity entity) {
         try {
-            // Use reflection to check if the entity has an 'transactionId' field
-            Field idField = entity.getClass().getDeclaredField("transactionId");
+            // Use reflection to check if the entity has an 'id' field
+            Field idField = entity.getClass().getDeclaredField("id");
             idField.setAccessible(true);  // Make the field accessible
 
             // If the field is null or empty, set it to a new UUID

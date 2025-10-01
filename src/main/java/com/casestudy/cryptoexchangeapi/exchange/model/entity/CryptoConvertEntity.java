@@ -23,9 +23,12 @@ public class CryptoConvertEntity extends BaseEntity {
 
     @Id
     @Indexed(unique = true)
+    private String id;
+
+    @Field("TRANSACTION_ID")
     private String transactionId;
 
-    @Field(name = "AMOUNT")
+    @Field(name = "AMOUNT", targetType = FieldType.DECIMAL128)
     private BigDecimal amount;
 
     @Field(name = "FROM_CURRENCY", targetType = FieldType.STRING)
@@ -34,7 +37,7 @@ public class CryptoConvertEntity extends BaseEntity {
     @Field(name = "TO_CURRENCY", targetType = FieldType.STRING)
     private EnumCryptoCurrency toCurrency;
 
-    @Field(name = "CONVERTED_AMOUNT")
+    @Field(name = "CONVERTED_AMOUNT", targetType = FieldType.DECIMAL128)
     private BigDecimal convertedAmount;
 
 }

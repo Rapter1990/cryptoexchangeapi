@@ -1,9 +1,12 @@
 package com.casestudy.cryptoexchangeapi.exchange.service;
 
+import com.casestudy.cryptoexchangeapi.common.model.CustomPage;
+import com.casestudy.cryptoexchangeapi.common.model.dto.request.CustomPagingRequest;
 import com.casestudy.cryptoexchangeapi.exchange.exception.ConversionFailedException;
 import com.casestudy.cryptoexchangeapi.exchange.feign.CmcClient;
 import com.casestudy.cryptoexchangeapi.exchange.model.CryptoConvert;
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.request.ConvertRequest;
+import com.casestudy.cryptoexchangeapi.exchange.model.dto.request.ListCryptoConvertRequest;
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.response.PriceConversionResponse;
 import com.casestudy.cryptoexchangeapi.exchange.model.entity.CryptoConvertEntity;
 import com.casestudy.cryptoexchangeapi.exchange.model.enums.EnumCryptoCurrency;
@@ -13,10 +16,18 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -32,6 +43,7 @@ public class CryptoConvertService {
     @RateLimiter(name = "cmc")
     @Retry(name = "cmc")
     @CircuitBreaker(name = "cmc", fallbackMethod = "fallbackConvertAndPersist")
+    @Transactional
     public CryptoConvert convertAndPersist(ConvertRequest request) {
 
         PriceConversionResponse response = cmcClient.priceConversion(
@@ -67,7 +79,7 @@ public class CryptoConvertService {
         BigDecimal convertedAmount = unitPrice.multiply(request.getAmount());
 
         CryptoConvertEntity entity = CryptoConvertEntity.builder()
-                .transactionId(UUID.randomUUID().toString()) // optional; listener would fill if absent
+                .transactionId(UUID.randomUUID().toString())
                 .amount(request.getAmount())
                 .fromCurrency(request.getFrom())
                 .toCurrency(request.getTo())
@@ -77,6 +89,28 @@ public class CryptoConvertService {
         CryptoConvertEntity saved = cryptoConvertRepository.save(entity);
 
         return mapper.map(saved);
+
+    }
+
+    @Transactional(readOnly = true)
+    public CustomPage<CryptoConvert> getHistory(ListCryptoConvertRequest request,
+                                                CustomPagingRequest pagingRequest) {
+
+        Pageable pageable = Optional.ofNullable(pagingRequest)
+                .map(CustomPagingRequest::toPageable)
+                .orElse(PageRequest.of(1, 20, Sort.by(Sort.Direction.DESC, "createdAt")));
+
+        ListCryptoConvertRequest.Filter filter = Optional.ofNullable(request)
+                .map(ListCryptoConvertRequest::getFilter)
+                .orElse(null);
+
+        Page<CryptoConvertEntity> page = cryptoConvertRepository.searchWithCriteria(filter, pageable);
+
+        List<CryptoConvert> items = page.getContent().stream()
+                .map(mapper::map)
+                .toList();
+
+        return CustomPage.of(items, page);
 
     }
 
