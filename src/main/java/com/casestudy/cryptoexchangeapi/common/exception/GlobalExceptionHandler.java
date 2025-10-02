@@ -1,6 +1,7 @@
 package com.casestudy.cryptoexchangeapi.common.exception;
 
 import com.casestudy.cryptoexchangeapi.common.model.CustomError;
+import com.casestudy.cryptoexchangeapi.exchange.exception.ConversionFailedException;
 import jakarta.validation.ConstraintViolationException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
@@ -10,7 +11,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -101,13 +101,28 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(RuntimeException.class)
     protected ResponseEntity<?> handleRuntimeException(final RuntimeException runtimeException) {
+
         CustomError customError = CustomError.builder()
-                .httpStatus(HttpStatus.NOT_FOUND)
+                .httpStatus(HttpStatus.BAD_REQUEST)
                 .header(CustomError.Header.API_ERROR.getName())
                 .message(runtimeException.getMessage())
                 .build();
 
-        return new ResponseEntity<>(customError, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(customError, HttpStatus.BAD_REQUEST);
+
+    }
+
+    @ExceptionHandler(ConversionFailedException.class)
+    protected ResponseEntity<Object> handleConversionFailed(final ConversionFailedException ex) {
+
+        CustomError customError = CustomError.builder()
+                .httpStatus(ex.getStatus())
+                .header(ex.getHeader().getName())
+                .message(ex.getMessage())
+                .build();
+
+        return new ResponseEntity<>(customError, ex.getStatus());
+
     }
 
 }
