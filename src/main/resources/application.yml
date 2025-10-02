@@ -23,14 +23,15 @@ springdoc:
 cmc:
   base-url: https://pro-api.coinmarketcap.com
   api-key: ${COIN_MARKET_CAP_API_KEY}
+  cache-ttl: 10000 # 10 seconds
 
 # Root namespace for Resilience4j Spring Boot integration
 resilience4j:
   ratelimiter:
     instances:
       cmc:
-        limit-for-period: 25         # Max number of calls permitted per refresh period -25
-        limit-refresh-period: 1s     # # Window length for replenishing permits - every 1 second
+        limit-for-period: 3         # Max number of calls permitted per refresh period - 3
+        limit-refresh-period: 10s     # # Window length for replenishing permits - every 10 second
         timeout-duration: 0          # # How long a caller waits for a permit (0 = fail fast) - don't wait if bucket is empty
   retry:
     instances:
@@ -46,3 +47,9 @@ resilience4j:
         sliding-window-size: 10 # Number of calls recorded in the rolling window
         failure-rate-threshold: 50 # % of failed calls in the window that will OPEN the breaker
         wait-duration-in-open-state: 10s # How long to stay OPEN before moving to HALF_OPEN
+
+# Cache Logging
+logging:
+  level:
+    org.springframework.cache: TRACE
+    org.springframework.cache.interceptor: TRACE

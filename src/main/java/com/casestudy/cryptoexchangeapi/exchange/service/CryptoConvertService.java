@@ -9,13 +9,16 @@ import com.casestudy.cryptoexchangeapi.exchange.model.dto.request.ConvertRequest
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.request.ListCryptoConvertRequest;
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.response.PriceConversionResponse;
 import com.casestudy.cryptoexchangeapi.exchange.model.entity.CryptoConvertEntity;
-import com.casestudy.cryptoexchangeapi.exchange.model.enums.EnumCryptoCurrency;
 import com.casestudy.cryptoexchangeapi.exchange.model.mapper.CryptoConvertEntityToCryptoConvertMapper;
 import com.casestudy.cryptoexchangeapi.exchange.repository.CryptoConvertRepository;
+import com.casestudy.cryptoexchangeapi.exchange.utils.Constants;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +34,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = Constants.EXCHANGE)
 public class CryptoConvertService {
 
     private final CmcClient cmcClient;
@@ -44,6 +47,7 @@ public class CryptoConvertService {
     @Retry(name = "cmc")
     @CircuitBreaker(name = "cmc", fallbackMethod = "fallbackConvertAndPersist")
     @Transactional
+    @CacheEvict(allEntries = true)
     public CryptoConvert convertAndPersist(ConvertRequest request) {
 
         PriceConversionResponse response = cmcClient.priceConversion(
@@ -93,6 +97,7 @@ public class CryptoConvertService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(keyGenerator = "historyKeyGenerator")
     public CustomPage<CryptoConvert> getHistory(ListCryptoConvertRequest request,
                                                 CustomPagingRequest pagingRequest) {
 
