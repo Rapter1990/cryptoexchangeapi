@@ -96,6 +96,7 @@ public class CryptoConvertService {
 
     }
 
+    @RateLimiter(name = "cmc")
     @Transactional(readOnly = true)
     @Cacheable(keyGenerator = "historyKeyGenerator")
     public CustomPage<CryptoConvert> getHistory(ListCryptoConvertRequest request,

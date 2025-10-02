@@ -9,21 +9,27 @@ import com.casestudy.cryptoexchangeapi.exchange.model.dto.request.FilterServiceP
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.response.CryptoConvertResponse;
 import com.casestudy.cryptoexchangeapi.exchange.model.mapper.CustomPageCryptoConvertToCustomPagingCryptoConvertResponseMapper;
 import com.casestudy.cryptoexchangeapi.exchange.service.CryptoConvertService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/convert")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(
+        name = "Crypto Convert API",
+        description = "Convert between cryptocurrencies and query persisted conversion history. "
+                + "POST /api/convert returns 201 with the saved conversion; "
+                + "POST /api/convert/history supports filtering (from/to, amount & convertedAmount ranges, "
+                + "createdAt range, transactionId substring) plus paging & sorting."
+)
 public class CryptoConvertController {
 
     private final CryptoConvertService service;
@@ -32,6 +38,7 @@ public class CryptoConvertController {
             CustomPageCryptoConvertToCustomPagingCryptoConvertResponseMapper.initialize();
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public CustomResponse<CryptoConvert> convert(@Valid @RequestBody ConvertRequest req) {
 
         CryptoConvert savedCryptoConvert = service.convertAndPersist(req);
