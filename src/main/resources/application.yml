@@ -53,3 +53,16 @@ logging:
   level:
     org.springframework.cache: TRACE
     org.springframework.cache.interceptor: TRACE
+
+# Prometheus
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - "*"
+          - prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
