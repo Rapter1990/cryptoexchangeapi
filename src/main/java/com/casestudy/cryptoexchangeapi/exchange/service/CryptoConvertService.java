@@ -7,9 +7,12 @@ import com.casestudy.cryptoexchangeapi.exchange.feign.CmcClient;
 import com.casestudy.cryptoexchangeapi.exchange.model.CryptoConvert;
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.request.ConvertRequest;
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.request.ListCryptoConvertRequest;
+import com.casestudy.cryptoexchangeapi.exchange.model.dto.response.CryptoMapResponse;
+import com.casestudy.cryptoexchangeapi.exchange.model.dto.response.CryptoNameSymbol;
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.response.PriceConversionResponse;
 import com.casestudy.cryptoexchangeapi.exchange.model.entity.CryptoConvertEntity;
 import com.casestudy.cryptoexchangeapi.exchange.model.mapper.CryptoConvertEntityToCryptoConvertMapper;
+import com.casestudy.cryptoexchangeapi.exchange.model.mapper.CryptoMapResponseToCryptoNameSymbolMapper;
 import com.casestudy.cryptoexchangeapi.exchange.repository.CryptoConvertRepository;
 import com.casestudy.cryptoexchangeapi.exchange.utils.Constants;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -40,8 +43,11 @@ public class CryptoConvertService {
     private final CmcClient cmcClient;
     private final CryptoConvertRepository cryptoConvertRepository;
 
-    private final CryptoConvertEntityToCryptoConvertMapper mapper =
+    private final CryptoConvertEntityToCryptoConvertMapper cryptoConvertEntityToCryptoConvertMapper =
             CryptoConvertEntityToCryptoConvertMapper.initialize();
+
+    private final CryptoMapResponseToCryptoNameSymbolMapper cryptoMapResponseToCryptoNameSymbolMapper =
+            CryptoMapResponseToCryptoNameSymbolMapper.initialize();
 
     @RateLimiter(name = "cmc")
     @Retry(name = "cmc")
@@ -92,7 +98,7 @@ public class CryptoConvertService {
 
         CryptoConvertEntity saved = cryptoConvertRepository.save(entity);
 
-        return mapper.map(saved);
+        return cryptoConvertEntityToCryptoConvertMapper.map(saved);
 
     }
 
@@ -113,10 +119,44 @@ public class CryptoConvertService {
         Page<CryptoConvertEntity> page = cryptoConvertRepository.searchWithCriteria(filter, pageable);
 
         List<CryptoConvert> items = page.getContent().stream()
-                .map(mapper::map)
+                .map(cryptoConvertEntityToCryptoConvertMapper::map)
                 .toList();
 
         return CustomPage.of(items, page);
+
+    }
+
+    @RateLimiter(name = "cmc")
+    @Transactional(readOnly = true)
+    public CustomPage<CryptoNameSymbol> listCryptoNamesSymbols(CustomPagingRequest pagingRequest) {
+
+        final Pageable pageable = Optional.ofNullable(pagingRequest)
+                .map(CustomPagingRequest::toPageable)
+                .orElse(PageRequest.of(0, 20));
+
+        final int page = pageable.getPageNumber(); // zero-based
+        final int size = pageable.getPageSize();
+
+        final int start = page * size + 1;
+        final String sort = "cmc_rank";
+
+        final CryptoMapResponse response = cmcClient.cryptoMap(start, size, sort);
+
+        List<CryptoNameSymbol> content = (response != null && response.getData() != null)
+                ? response.getData().stream()
+                .map(cryptoMapResponseToCryptoNameSymbolMapper::map)
+                .toList()
+                : List.of();
+
+        int totalPageCount = content.size() < size ? (page + 1) : (page + 2);
+
+        return CustomPage.<CryptoNameSymbol>builder()
+                .content(content)
+                .pageNumber(page + 1)
+                .pageSize(size)
+                .totalElementCount((long) content.size())
+                .totalPageCount(totalPageCount)
+                .build();
 
     }
 

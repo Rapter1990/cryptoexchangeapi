@@ -18,6 +18,9 @@ springdoc:
   api-docs:
     enabled: true
   show-actuator: true
+  swagger-ui:
+    tags-sorter: alpha
+    operations-sorter: alpha
 
 # CoinMarketCap API props
 cmc:

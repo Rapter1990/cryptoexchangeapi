@@ -1,5 +1,6 @@
 package com.casestudy.cryptoexchangeapi.exchange.service;
 
+import com.casestudy.cryptoexchangeapi.base.AbstractBaseServiceTest;
 import com.casestudy.cryptoexchangeapi.common.model.CustomPage;
 import com.casestudy.cryptoexchangeapi.common.model.CustomPaging;
 import com.casestudy.cryptoexchangeapi.common.model.dto.request.CustomPagingRequest;
@@ -9,6 +10,8 @@ import com.casestudy.cryptoexchangeapi.exchange.feign.CmcClient;
 import com.casestudy.cryptoexchangeapi.exchange.model.CryptoConvert;
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.request.ConvertRequest;
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.request.ListCryptoConvertRequest;
+import com.casestudy.cryptoexchangeapi.exchange.model.dto.response.CryptoMapResponse;
+import com.casestudy.cryptoexchangeapi.exchange.model.dto.response.CryptoNameSymbol;
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.response.PriceConversionResponse;
 import com.casestudy.cryptoexchangeapi.exchange.model.entity.CryptoConvertEntity;
 import com.casestudy.cryptoexchangeapi.exchange.model.enums.EnumCryptoCurrency;
@@ -26,10 +29,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
-class CryptoConvertServiceTest {
+class CryptoConvertServiceTest extends AbstractBaseServiceTest {
 
     @Mock
     private CmcClient cmcClient;
@@ -39,8 +40,6 @@ class CryptoConvertServiceTest {
 
     @InjectMocks
     private CryptoConvertService service;
-
-    // ---------- Helpers ----------
 
     private ConvertRequest makeConvertReq(BigDecimal amount, EnumCryptoCurrency from, EnumCryptoCurrency to) {
         ConvertRequest req = new ConvertRequest();
@@ -198,8 +197,6 @@ class CryptoConvertServiceTest {
         verify(cryptoConvertRepository, never()).save(any());
     }
 
-    // ---------- getHistory tests ----------
-
     @Test
     void getHistory_buildsPageableAndMapsItems() {
         // Given
@@ -290,8 +287,6 @@ class CryptoConvertServiceTest {
         verify(cryptoConvertRepository, times(1)).searchWithCriteria(isNull(), any(Pageable.class));
     }
 
-    // ---------- fallbackConvertAndPersist ----------
-
     @Test
     void fallbackConvertAndPersist_alwaysThrowsWrapped() {
         // Given
@@ -303,6 +298,136 @@ class CryptoConvertServiceTest {
                 .isInstanceOf(ConversionFailedException.class)
                 .hasMessageContaining("Upstream conversion unavailable")
                 .hasCause(cause);
+    }
+
+    @Test
+    void listCryptoNamesSymbols_fullPage_mapsItems_andComputesTotalPages_asPagePlus2() {
+        // Given: page domain=1 -> zero-based = 0; size=2; start = 0*2 + 1 = 1
+        CustomPagingRequest paging = CustomPagingRequest.builder()
+                .pagination(CustomPaging.builder().pageNumber(1).pageSize(2).build())
+                .sorting(null)
+                .build();
+
+        CryptoMapResponse.Item i1 = new CryptoMapResponse.Item();
+        i1.setName("Bitcoin"); i1.setSymbol("BTC");
+        CryptoMapResponse.Item i2 = new CryptoMapResponse.Item();
+        i2.setName("Ethereum"); i2.setSymbol("ETH");
+
+        CryptoMapResponse resp = new CryptoMapResponse();
+        resp.setData(List.of(i1, i2)); // content size == page size -> "full page"
+
+        when(cmcClient.cryptoMap(1, 2, "cmc_rank")).thenReturn(resp);
+
+        // When
+        CustomPage<CryptoNameSymbol> page = service.listCryptoNamesSymbols(paging);
+
+        // Then
+        assertThat(page).isNotNull();
+        assertThat(page.getContent()).hasSize(2);
+        assertThat(page.getContent().get(0).getName()).isEqualTo("Bitcoin");
+        assertThat(page.getContent().get(0).getSymbol()).isEqualTo("BTC");
+        assertThat(page.getContent().get(1).getName()).isEqualTo("Ethereum");
+        assertThat(page.getContent().get(1).getSymbol()).isEqualTo("ETH");
+
+        // page meta:
+        assertThat(page.getPageNumber()).isEqualTo(1);    // domain page (zero-based+1)
+        assertThat(page.getPageSize()).isEqualTo(2);
+        assertThat(page.getTotalElementCount()).isEqualTo(2);
+        assertThat(page.getTotalPageCount()).isEqualTo(2); // full page => page(0)+2
+
+        verify(cmcClient, times(1)).cryptoMap(1, 2, "cmc_rank");
+        verifyNoInteractions(cryptoConvertRepository);
+        verifyNoMoreInteractions(cmcClient);
+    }
+
+    @Test
+    void listCryptoNamesSymbols_shortPage_lastPage_totalPages_asPagePlus1() {
+
+        // Given
+        CustomPagingRequest paging = CustomPagingRequest.builder()
+                .pagination(CustomPaging.builder().pageNumber(2).pageSize(3).build())
+                .sorting(null)
+                .build();
+
+        CryptoMapResponse.Item i1 = new CryptoMapResponse.Item();
+        i1.setName("Arbitrum"); i1.setSymbol("ARB");
+
+        CryptoMapResponse resp = new CryptoMapResponse();
+        resp.setData(List.of(i1)); // short page (size 1 < 3)
+
+        // When
+        when(cmcClient.cryptoMap(4, 3, "cmc_rank")).thenReturn(resp);
+
+        // Then
+        CustomPage<CryptoNameSymbol> page = service.listCryptoNamesSymbols(paging);
+
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().getFirst().getName()).isEqualTo("Arbitrum");
+        assertThat(page.getContent().getFirst().getSymbol()).isEqualTo("ARB");
+
+        assertThat(page.getPageNumber()).isEqualTo(2);
+        assertThat(page.getPageSize()).isEqualTo(3);
+        assertThat(page.getTotalElementCount()).isEqualTo(1);
+        assertThat(page.getTotalPageCount()).isEqualTo(2);
+
+        // Verify
+        verify(cmcClient, times(1)).cryptoMap(4, 3, "cmc_rank");
+        verifyNoInteractions(cryptoConvertRepository);
+        verifyNoMoreInteractions(cmcClient);
+
+    }
+
+    @Test
+    void listCryptoNamesSymbols_withNullPaging_usesDefaultPageable_andHandlesNullResponse() {
+
+        // Given
+        when(cmcClient.cryptoMap(1, 20, "cmc_rank")).thenReturn(null);
+
+        // When
+        CustomPage<CryptoNameSymbol> page = service.listCryptoNamesSymbols(null);
+
+        // Then
+        assertThat(page.getContent()).isEmpty();
+        assertThat(page.getPageNumber()).isEqualTo(1); // zero-based(0)+1
+        assertThat(page.getPageSize()).isEqualTo(20);
+        assertThat(page.getTotalElementCount()).isEqualTo(0);
+        assertThat(page.getTotalPageCount()).isEqualTo(1); // short page condition (0 < 20) => 0+1
+
+        // Verify
+        verify(cmcClient, times(1)).cryptoMap(1, 20, "cmc_rank");
+        verifyNoInteractions(cryptoConvertRepository);
+        verifyNoMoreInteractions(cmcClient);
+
+    }
+
+    @Test
+    void listCryptoNamesSymbols_handlesEmptyDataList() {
+
+        // Given
+        CustomPagingRequest paging = CustomPagingRequest.builder()
+                .pagination(CustomPaging.builder().pageNumber(1).pageSize(5).build())
+                .build();
+
+        CryptoMapResponse resp = new CryptoMapResponse();
+        resp.setData(List.of());
+
+        //  When
+        when(cmcClient.cryptoMap(1, 5, "cmc_rank")).thenReturn(resp);
+
+        // Then
+        CustomPage<CryptoNameSymbol> page = service.listCryptoNamesSymbols(paging);
+
+        assertThat(page.getContent()).isEmpty();
+        assertThat(page.getPageNumber()).isEqualTo(1);
+        assertThat(page.getPageSize()).isEqualTo(5);
+        assertThat(page.getTotalElementCount()).isEqualTo(0);
+        assertThat(page.getTotalPageCount()).isEqualTo(1); // short page
+
+        // Verify
+        verify(cmcClient, times(1)).cryptoMap(1, 5, "cmc_rank");
+        verifyNoInteractions(cryptoConvertRepository);
+        verifyNoMoreInteractions(cmcClient);
+
     }
 
 }

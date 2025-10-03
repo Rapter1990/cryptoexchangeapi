@@ -23,8 +23,10 @@ public interface CmcClient {
             @RequestParam(value = "convert_id", required = false) String toId);
 
     @GetMapping("/v1/cryptocurrency/map")
-    CryptoMapResponse cryptoMap(@RequestParam(value = "listing_status", defaultValue = "active") String status,
-                                @RequestParam(value = "start", defaultValue = "1") int start,
-                                @RequestParam(value = "limit", defaultValue = "5000") int limit);
+    CryptoMapResponse cryptoMap(
+            @RequestParam("start") Integer start,
+            @RequestParam("limit") Integer limit,
+            @RequestParam(value = "sort", required = false, defaultValue = "cmc_rank") String sort
+    );
 
 }

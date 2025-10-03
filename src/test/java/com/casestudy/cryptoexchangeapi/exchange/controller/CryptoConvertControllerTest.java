@@ -12,6 +12,7 @@ import com.casestudy.cryptoexchangeapi.exchange.model.dto.request.ConvertRequest
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.request.FilterServicePagingRequest;
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.request.ListCryptoConvertRequest;
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.response.CryptoConvertResponse;
+import com.casestudy.cryptoexchangeapi.exchange.model.dto.response.CryptoNameSymbol;
 import com.casestudy.cryptoexchangeapi.exchange.model.enums.EnumCryptoCurrency;
 import com.casestudy.cryptoexchangeapi.exchange.model.mapper.CryptoConvertToCryptoConvertResponseMapper;
 import com.casestudy.cryptoexchangeapi.exchange.model.mapper.CustomPageCryptoConvertToCustomPagingCryptoConvertResponseMapper;
@@ -28,6 +29,7 @@ import java.util.List;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -270,6 +272,138 @@ class CryptoConvertControllerTest extends AbstractRestControllerTest {
                 .andExpect(jsonPath("$.subErrors", notNullValue()));
 
         verifyNoInteractions(service);
+    }
+
+    @Test
+    @DisplayName("GET /api/convert/map -> 200 OK; delegates to service.listCryptoNamesSymbols and returns paged (name,symbol) list")
+    void cryptoMap_HappyPath_Returns200_WithContent() throws Exception {
+
+        // Given
+        CryptoNameSymbol c1 = new CryptoNameSymbol("Bitcoin", "BTC");
+        CryptoNameSymbol c2 = new CryptoNameSymbol("Ethereum", "ETH");
+        CryptoNameSymbol c3 = new CryptoNameSymbol("Arbitrum", "ARB");
+
+        CustomPage<CryptoNameSymbol> mockPage = CustomPage.<CryptoNameSymbol>builder()
+                .content(List.of(c1, c2, c3))
+                .pageNumber(1)
+                .pageSize(3)
+                .totalElementCount(3L)
+                .totalPageCount(1)
+                .build();
+
+        when(service.listCryptoNamesSymbols(any(CustomPagingRequest.class)))
+                .thenReturn(mockPage);
+
+        // When / Then
+        mockMvc.perform(get(BASE_URL + "/map")
+                        .param("page", "1")
+                        .param("size", "3"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.httpStatus").value("OK"))
+                .andExpect(jsonPath("$.isSuccess").value(true))
+                .andExpect(jsonPath("$.response.pageNumber").value(1))
+                .andExpect(jsonPath("$.response.pageSize").value(3))
+                .andExpect(jsonPath("$.response.totalElementCount").value(3))
+                .andExpect(jsonPath("$.response.totalPageCount").value(1))
+                .andExpect(jsonPath("$.response.content", hasSize(3)))
+                .andExpect(jsonPath("$.response.content[0].name").value("Bitcoin"))
+                .andExpect(jsonPath("$.response.content[0].symbol").value("BTC"))
+                .andExpect(jsonPath("$.response.content[1].name").value("Ethereum"))
+                .andExpect(jsonPath("$.response.content[1].symbol").value("ETH"))
+                .andExpect(jsonPath("$.response.content[2].name").value("Arbitrum"))
+                .andExpect(jsonPath("$.response.content[2].symbol").value("ARB"));
+
+        verify(service, times(1)).listCryptoNamesSymbols(any(CustomPagingRequest.class));
+        verifyNoMoreInteractions(service);
+
+    }
+
+    @Test
+    @DisplayName("GET /api/convert/map -> 200 OK with defaults (page=1,size=20) when no params provided")
+    void cryptoMap_Defaults_NoParams_Returns200() throws Exception {
+
+        // Given
+        CryptoNameSymbol c1 = new CryptoNameSymbol("Bitcoin", "BTC");
+
+        CustomPage<CryptoNameSymbol> mockPage = CustomPage.<CryptoNameSymbol>builder()
+                .content(List.of(c1))
+                .pageNumber(1) // controller default page is 1
+                .pageSize(20)  // controller default size is 20
+                .totalElementCount(1L)
+                .totalPageCount(1)
+                .build();
+
+        // When
+        when(service.listCryptoNamesSymbols(any(CustomPagingRequest.class)))
+                .thenReturn(mockPage);
+
+        // Then
+        mockMvc.perform(get(BASE_URL + "/map"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.httpStatus").value("OK"))
+                .andExpect(jsonPath("$.isSuccess").value(true))
+                .andExpect(jsonPath("$.response.pageNumber").value(1))
+                .andExpect(jsonPath("$.response.pageSize").value(20))
+                .andExpect(jsonPath("$.response.totalElementCount").value(1))
+                .andExpect(jsonPath("$.response.totalPageCount").value(1))
+                .andExpect(jsonPath("$.response.content", hasSize(1)))
+                .andExpect(jsonPath("$.response.content[0].name").value("Bitcoin"))
+                .andExpect(jsonPath("$.response.content[0].symbol").value("BTC"));
+
+        // Verify
+        verify(service, times(1)).listCryptoNamesSymbols(any(CustomPagingRequest.class));
+        verifyNoMoreInteractions(service);
+
+    }
+
+    @Test
+    @DisplayName("GET /api/convert/map -> 400 when page < 1; service not invoked")
+    void cryptoMap_ValidationFailure_PageLessThan1_Returns400() throws Exception {
+
+        mockMvc.perform(get(BASE_URL + "/map")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.httpStatus").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.isSuccess").value(false));
+
+        verifyNoInteractions(service);
+
+    }
+
+    @Test
+    @DisplayName("GET /api/convert/map -> 400 when size < 1; service not invoked")
+    void cryptoMap_ValidationFailure_SizeLessThan1_Returns400() throws Exception {
+
+        mockMvc.perform(get(BASE_URL + "/map")
+                        .param("page", "1")
+                        .param("size", "0"))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.httpStatus").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.isSuccess").value(false));
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    @DisplayName("GET /api/convert/map -> 400 when size > 5000; service not invoked")
+    void cryptoMap_ValidationFailure_SizeTooLarge_Returns400() throws Exception {
+
+        mockMvc.perform(get(BASE_URL + "/map")
+                        .param("page", "1")
+                        .param("size", "6000"))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.httpStatus").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.isSuccess").value(false));
+
+
+        verifyNoInteractions(service);
+
     }
 
     // ------------------------------------------------------------
