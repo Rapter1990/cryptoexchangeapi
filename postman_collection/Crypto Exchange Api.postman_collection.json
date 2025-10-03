@@ -1,0 +1,159 @@
+{
+	"info": {
+		"_postman_id": "7d51064c-dc6f-4034-8bd0-5cb78c4fec79",
+		"name": "Crypto Exchange Api",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "33002673"
+	},
+	"item": [
+		{
+			"name": "Convert Crypto Currency with Amount",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"from\" : \"BTC\",\r\n    \"to\" : \"ARB\",\r\n    \"amount\" : 100\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:1927/api/convert",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "1927",
+					"path": [
+						"api",
+						"convert"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Convert Crypto Currency with Amount Exception",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"from\" : \"BTC\",\r\n    \"to\" : \"BTC\",\r\n    \"amount\" : 100\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:1927/api/convert",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "1927",
+					"path": [
+						"api",
+						"convert"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get History with Filter, Pagination and Sorting",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"filterRequest\": {\r\n    \"filter\": {\r\n      \"from\": \"BTC\",\r\n      \"to\": \"ARB\",\r\n      \"minAmount\": 50,\r\n      \"maxAmount\": 5000,\r\n      \"minConvertedAmount\": 1000000,\r\n      \"maxConvertedAmount\": 3000000000,\r\n      \"createdAtFrom\": \"2025-09-29T00:00:00\",\r\n      \"createdAtTo\": \"2025-10-02T23:59:59\",\r\n      \"transactionIdContains\": \"c29059\"\r\n    }\r\n  },\r\n  \"pagingRequest\": {\r\n    \"pagination\": {\r\n      \"pageNumber\": 1,\r\n      \"pageSize\": 20\r\n    },\r\n    \"sorting\": {\r\n      \"sortBy\": \"sentAt\",\r\n      \"sortDirection\": \"DESC\"\r\n    }\r\n  }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:1927/api/convert/history",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "1927",
+					"path": [
+						"api",
+						"convert",
+						"history"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get History with Filter and Pagination",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"filterRequest\": {\r\n    \"filter\": {\r\n      \"from\": \"BTC\",\r\n      \"to\": \"ARB\",\r\n      \"minAmount\": 50,\r\n      \"maxAmount\": 5000,\r\n      \"minConvertedAmount\": 1000000,\r\n      \"maxConvertedAmount\": 3000000000,\r\n      \"createdAtFrom\": \"2025-09-29T00:00:00\",\r\n      \"createdAtTo\": \"2025-10-02T23:59:59\",\r\n      \"transactionIdContains\": \"c29059\"\r\n    }\r\n  },\r\n  \"pagingRequest\": {\r\n    \"pagination\": {\r\n      \"pageNumber\": 1,\r\n      \"pageSize\": 20\r\n    }\r\n  }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:1927/api/convert/history",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "1927",
+					"path": [
+						"api",
+						"convert",
+						"history"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Currency List with Pagination",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:1927/api/convert/map?page=1&size=20",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "1927",
+					"path": [
+						"api",
+						"convert",
+						"map"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "size",
+							"value": "20"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
