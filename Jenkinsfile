@@ -15,7 +15,7 @@ pipeline {
                     checkout([
                         $class: 'GitSCM',
                         branches: [[name: "*/${env.BRANCH_NAME}"]],
-                        userRemoteConfigs: [[url: "${env.GIT_REPO_URL}"]]
+                        userRemoteConfigs: [[url: env.GIT_REPO_URL, credentialsId: env.GIT_CRED_ID]]]
                     ])
                 }
             }
