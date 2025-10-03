@@ -9,6 +9,11 @@ import com.casestudy.cryptoexchangeapi.exchange.model.dto.request.FilterServiceP
 import com.casestudy.cryptoexchangeapi.exchange.model.dto.response.CryptoConvertResponse;
 import com.casestudy.cryptoexchangeapi.exchange.model.mapper.CustomPageCryptoConvertToCustomPagingCryptoConvertResponseMapper;
 import com.casestudy.cryptoexchangeapi.exchange.service.CryptoConvertService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
@@ -37,6 +42,66 @@ public class CryptoConvertController {
     private static final CustomPageCryptoConvertToCustomPagingCryptoConvertResponseMapper PAGE_MAPPER =
             CustomPageCryptoConvertToCustomPagingCryptoConvertResponseMapper.initialize();
 
+    @Operation(
+            operationId = "convert",
+            summary = "Convert an amount from one crypto to another and persist the result",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Conversion request",
+                    content = @Content(
+                            schema = @Schema(implementation = ConvertRequest.class),
+                            examples = @ExampleObject(
+                                    name = "BTC to ARB",
+                                    value = """
+                        {
+                          "from": "BTC",
+                          "to": "ARB",
+                          "amount": 100
+                        }
+                        """
+                            )
+                    )
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "201",
+                            description = "Conversion created",
+                            content = @Content(
+                                    schema = @Schema(implementation = CustomResponse.class),
+                                    examples = @ExampleObject(
+                                            name = "Created",
+                                            value = """
+                            {
+                              "time": "2025-10-01T18:04:33.282",
+                              "httpStatus": "CREATED",
+                              "isSuccess": true,
+                              "response": {
+                                "createdAt": "2025-10-01T18:04:33.282",
+                                "transactionId": "6c7de41f-71e5-4d63-984d-8dcb60ba6265",
+                                "amount": 100,
+                                "from": "BTC",
+                                "to": "ARB",
+                                "convertedAmount": 2711598539.488985400
+                              }
+                            }
+                            """
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Validation error",
+                            content = @Content(
+                                    mediaType = "application/json"
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "502",
+                            description = "Upstream conversion unavailable (CMC error)",
+                            content = @Content(mediaType = "application/json")
+                    )
+            }
+    )
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CustomResponse<CryptoConvert> convert(@Valid @RequestBody ConvertRequest req) {
@@ -46,6 +111,81 @@ public class CryptoConvertController {
 
     }
 
+    @Operation(
+            operationId = "getHistory",
+            summary = "Search conversion history with filters, pagination and sorting",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Filter, pagination and sorting",
+                    content = @Content(
+                            schema = @Schema(implementation = FilterServicePagingRequest.class),
+                            examples = @ExampleObject(
+                                    name = "Filter & page",
+                                    value = """
+                        {
+                          "filterRequest": {
+                            "filter": {
+                              "from": "BTC",
+                              "to": "ARB",
+                              "minAmount": 50,
+                              "maxAmount": 5000,
+                              "minConvertedAmount": 1000000,
+                              "maxConvertedAmount": 3000000000,
+                              "createdAtFrom": "2025-09-29T00:00:00",
+                              "createdAtTo": "2025-10-02T23:59:59",
+                              "transactionIdContains": "6c7de4"
+                            }
+                          },
+                          "pagingRequest": {
+                            "pagination": { "pageNumber": 1, "pageSize": 20 },
+                            "sorting": { "sortBy": "createdAt", "sortDirection": "DESC" }
+                          }
+                        }
+                        """
+                            )
+                    )
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Paged result",
+                            content = @Content(
+                                    schema = @Schema(implementation = CustomPagingResponse.class),
+                                    examples = @ExampleObject(
+                                            name = "OK",
+                                            value = """
+                            {
+                              "time": "2025-10-01T19:27:24.2492919",
+                              "httpStatus": "OK",
+                              "isSuccess": true,
+                              "response": {
+                                "content": [
+                                  {
+                                    "transactionId": "6c7de41f-71e5-4d63-984d-8dcb60ba6265",
+                                    "amount": 100,
+                                    "from": "BTC",
+                                    "to": "ARB",
+                                    "convertedAmount": 2711598539.488985400,
+                                    "createdAt": "2025-10-01T18:04:33.282"
+                                  }
+                                ],
+                                "pageNumber": 1,
+                                "pageSize": 20,
+                                "totalElementCount": 1,
+                                "totalPageCount": 1
+                              }
+                            }
+                            """
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Validation error",
+                            content = @Content(mediaType = "application/json")
+                    )
+            }
+    )
     @PostMapping("/history")
     public CustomResponse<CustomPagingResponse<CryptoConvertResponse>> getHistory(
             @Valid @RequestBody FilterServicePagingRequest filterServicePagingRequest) {
