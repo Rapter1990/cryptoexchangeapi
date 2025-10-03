@@ -296,7 +296,8 @@ http://prometheus-service.default.svc.cluster.local:9090
 ### Docker Image Location
 
 ```
-https://hub.docker.com/repository/docker/noyandocker/githubscreenshotmailer/general
+https://hub.docker.com/repository/docker/noyandocker/cryptoexchangeapi/general
+https://hub.docker.com/repository/docker/noyandocker/cryptoexchangeapi-jenkins/general
 ```
 
 ### Jenkins
