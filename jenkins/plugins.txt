@@ -5,3 +5,4 @@ ws-cleanup
 docker-plugin
 docker-workflow
 docker-commons
+pipeline-stage-view
