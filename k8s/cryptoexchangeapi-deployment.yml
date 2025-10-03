@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cryptoexchangeapi
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cryptoexchangeapi
+  template:
+    metadata:
+      labels:
+        app: cryptoexchangeapi
+    spec:
+      containers:
+        - name: cryptoexchangeapi
+          image: noyandocker/cryptoexchangeapi:latest
+          ports:
+            - containerPort: 1133
+          envFrom:
+            - configMapRef:
+                name: cryptoexchangeapi-config
+            - secretRef:
+                name: cryptoexchangeapi-secrets
+          volumeMounts:
+            - name: cryptoexchangeapi-data
+              mountPath: /data/logs
+          # Optional health checks (you enabled management endpoints)
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 1927
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 1927
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: cryptoexchangeapi-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cryptoexchangeapi-service
+  namespace: default
+spec:
+  selector:
+    app: cryptoexchangeapi
+  ports:
+    - protocol: TCP
+      port: 1927
+      targetPort: 1927
+  type: NodePort
