@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         GIT_REPO_URL = 'https://github.com/Rapter1990/cryptoexchangeapi.git'
+        GIT_REPO_ID    = 'fdf97c32-ab81-4fff-ae77-8f833263dc55'
         BRANCH_NAME = 'main'
         DOCKERHUB_USERNAME = 'noyandocker'
         DOCKER_IMAGE_NAME = 'cryptoexchangeapi-jenkins'
@@ -15,7 +16,10 @@ pipeline {
                     checkout([
                         $class: 'GitSCM',
                         branches: [[name: "*/${env.BRANCH_NAME}"]],
-                        userRemoteConfigs: [[url: "${env.GIT_REPO_URL}"]]
+                        userRemoteConfigs: [[
+                           url: "${env.GIT_REPO_URL}",
+                           credentialsId: env.GIT_REPO_ID
+                        ]]
                     ])
                 }
             }
