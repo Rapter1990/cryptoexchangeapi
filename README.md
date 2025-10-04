@@ -91,8 +91,6 @@
 
 ### Explore Rest APIs
 
-### Explore Rest APIs
-
 Endpoints Summary
 <table style="width:100%; border-collapse: collapse;">
   <thead>
