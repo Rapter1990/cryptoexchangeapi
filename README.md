@@ -148,6 +148,12 @@ Endpoints Summary
 - Junit5
 - Mockito
 - Integration Tests
+- Mapstruct
+- Resilience4j
+- Resilience4j Rate Limiter
+- Resilience4j Retry
+- Resilience4j Circuit Breaker
+- Spring Cache
 - Docker
 - Docker Compose
 - CI/CD (Github Actions)
