@@ -208,7 +208,7 @@ Open the `index.html` file in your browser to view the detailed coverage report.
 To build and run the application with `Maven`, please follow the directions shown below;
 
 ```sh
-$ cd git clone https://github.com/Rapter1990/cryptoexchangeapi.git
+$ git clone https://github.com/Rapter1990/cryptoexchangeapi.git
 $ cd cryptoexchangeapi
 $ mvn clean install
 $ mvn spring-boot:run
